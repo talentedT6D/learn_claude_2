@@ -1,7 +1,10 @@
 import { fal } from "@fal-ai/client";
 import { NextRequest, NextResponse } from "next/server";
 
-fal.config({ credentials: process.env.FAL_KEY! });
+fal.config({
+  credentials:
+    "e3409f94-c4a2-437d-b53c-d47bd6ba8f4c:c1f5128a593989886d4f2614be043715",
+});
 
 interface FalChatResponse {
   choices: { text: string }[];
