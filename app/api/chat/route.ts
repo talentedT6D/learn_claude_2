@@ -1,42 +1,42 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { fal } from "@fal-ai/client";
 import { NextRequest, NextResponse } from "next/server";
 
-const client = new Anthropic();
+fal.config({ credentials: process.env.FAL_KEY! });
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
+interface FalChatResponse {
+  choices: { text: string }[];
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, moduleTitle, history } = (await req.json()) as {
-      message: string;
-      moduleTitle: string;
-      history?: ChatMessage[];
-    };
+    const { message, moduleTitle, history } = await req.json();
 
-    const messages: Anthropic.MessageParam[] = [
-      ...(history ?? []).map(
-        (m): Anthropic.MessageParam => ({ role: m.role, content: m.content }),
-      ),
-      { role: "user", content: message },
-    ];
+    // Build conversation context from history
+    const conversationContext = (history ?? [])
+      .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
+      .join("\n");
 
-    const response = await client.messages.create({
-      model: "claude-opus-4-6",
-      max_tokens: 1024,
-      system: `You are a concise coding tutor helping non-technical creatives learn Claude's API. Current module: ${moduleTitle}. Keep answers under 4 sentences. Use backticks for code.`,
-      messages,
-    });
+    const fullPrompt = conversationContext
+      ? `${conversationContext}\nuser: ${message}`
+      : message;
 
-    const reply = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
+    const result = await fal.subscribe(
+      "openrouter/router/openai/v1/chat/completions",
+      {
+        input: {
+          model: "anthropic/claude-sonnet-4.6",
+          prompt: fullPrompt,
+          system_prompt: `You are a concise coding tutor helping non-technical creatives learn Claude's API. Current module: ${moduleTitle}. Keep answers under 4 sentences. Use backticks for code.`,
+          max_tokens: 512,
+          temperature: 0.7,
+        },
+      }
+    );
 
-    return NextResponse.json({ reply: reply || "No response." });
+    const data = result.data as FalChatResponse;
+    const reply = data.choices?.[0]?.text ?? "No response.";
+
+    return NextResponse.json({ reply });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Failed to get response";
