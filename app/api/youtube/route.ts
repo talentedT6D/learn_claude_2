@@ -159,17 +159,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(FALLBACK_VIDEOS);
   }
 
-  const apiKey = process.env.YOUTUBE_API_KEY;
-  const hasRealKey = !!apiKey && apiKey !== "your-youtube-api-key-here";
+  // Hardcoded YouTube Data API v3 key. Environment variable overrides it
+  // if you want to rotate without touching the code.
+  const HARDCODED_YOUTUBE_API_KEY = "AIzaSyCtAr5wOYcDDNenyh6154rj2NN7Btb0Fq4";
+  const apiKey = process.env.YOUTUBE_API_KEY || HARDCODED_YOUTUBE_API_KEY;
 
-  // 1. Prefer the official Data API if a key is configured.
-  if (hasRealKey) {
-    try {
-      const items = await searchWithDataApi(q, apiKey!);
-      if (items.length > 0) return NextResponse.json(items);
-    } catch {
-      // Fall through to the keyless path.
-    }
+  // 1. Prefer the official Data API.
+  try {
+    const items = await searchWithDataApi(q, apiKey);
+    if (items.length > 0) return NextResponse.json(items);
+  } catch {
+    // Fall through to the keyless path.
   }
 
   // 2. Keyless: use YouTube's public Innertube endpoint.
