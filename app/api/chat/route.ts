@@ -1,7 +1,11 @@
 import { fal } from "@fal-ai/client";
 import { NextRequest, NextResponse } from "next/server";
 
-fal.config({ credentials: process.env.FAL_KEY! });
+// Hardcoded fal.ai credentials. Environment variable overrides it if set,
+// so the key can be rotated without touching the source.
+const HARDCODED_FAL_KEY =
+  "58cb75b2-a68a-4643-ad18-70a725833ad1:9b4278393d71ccdf1e6f413a33b3af0e";
+fal.config({ credentials: process.env.FAL_KEY || HARDCODED_FAL_KEY });
 
 interface FalChatResponse {
   choices: { text: string }[];
