@@ -11,12 +11,22 @@ interface VideoItem {
   };
 }
 
-export default function VideoPanel({ moduleTitle }: { moduleTitle: string }) {
+export default function VideoPanel({
+  moduleTitle,
+  lessonTitle,
+}: {
+  moduleTitle: string;
+  lessonTitle: string | null;
+}) {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const defaultQuery = lessonTitle
+    ? `${lessonTitle} ${moduleTitle} tutorial`
+    : `${moduleTitle} Claude API tutorial`;
 
   const fetchVideos = useCallback(async (q: string) => {
     setLoading(true);
@@ -32,10 +42,13 @@ export default function VideoPanel({ moduleTitle }: { moduleTitle: string }) {
     }
   }, []);
 
+  // Auto-fetch suggestions whenever the lesson (or module) changes,
+  // as long as the user hasn't typed a custom search query.
   useEffect(() => {
+    if (query.trim()) return;
     setActiveVideo(null);
-    fetchVideos(moduleTitle + " Claude API tutorial");
-  }, [moduleTitle, fetchVideos]);
+    fetchVideos(defaultQuery);
+  }, [defaultQuery, query, fetchVideos]);
 
   useEffect(() => {
     return () => {
@@ -48,11 +61,22 @@ export default function VideoPanel({ moduleTitle }: { moduleTitle: string }) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       const trimmed = value.trim();
-      fetchVideos(
-        trimmed ? trimmed : moduleTitle + " Claude API tutorial"
-      );
+      fetchVideos(trimmed ? trimmed : defaultQuery);
     }, 400);
   };
+
+  const clearSearch = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    setQuery("");
+    fetchVideos(defaultQuery);
+  };
+
+  const isSearching = query.trim().length > 0;
+  const contextLabel = isSearching
+    ? `Results for “${query.trim()}”`
+    : lessonTitle
+      ? `Suggested for: ${lessonTitle}`
+      : `Suggested for: ${moduleTitle}`;
 
   return (
     <div className="flex flex-col h-full">
@@ -60,13 +84,28 @@ export default function VideoPanel({ moduleTitle }: { moduleTitle: string }) {
         <h3 className="font-display font-bold text-sm text-dark">
           Video Tutorials
         </h3>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Search tutorials..."
-          className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-1.5 text-xs focus:outline-none focus:border-accent"
-        />
+        <div className="relative mt-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search any video..."
+            className="w-full rounded-lg border border-gray-200 pl-3 pr-7 py-1.5 text-xs focus:outline-none focus:border-accent"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              aria-label="Clear search"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full text-mid hover:text-dark hover:bg-surface flex items-center justify-center text-sm leading-none"
+            >
+              &#10005;
+            </button>
+          )}
+        </div>
+        <p className="mt-1.5 text-[10px] text-mid line-clamp-1">
+          {contextLabel}
+        </p>
       </div>
 
       {activeVideo && (

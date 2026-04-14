@@ -13,6 +13,15 @@ import ProgressBar from "@/components/ProgressBar";
 
 export default function ModulePage({ mod }: { mod: Module }) {
   const [rightTab, setRightTab] = useState<"chat" | "videos">("chat");
+  const [openLesson, setOpenLesson] = useState<number | null>(null);
+
+  const activeLesson =
+    openLesson !== null ? mod.lessons[openLesson] ?? null : null;
+
+  const handleOpenLessonChange = (index: number | null) => {
+    setOpenLesson(index);
+    if (index !== null) setRightTab("videos");
+  };
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -68,7 +77,12 @@ export default function ModulePage({ mod }: { mod: Module }) {
               <h2 className="font-display font-bold text-lg text-dark mb-3">
                 Lessons
               </h2>
-              <LessonGrid lessons={mod.lessons} moduleId={mod.id} />
+              <LessonGrid
+                lessons={mod.lessons}
+                moduleId={mod.id}
+                openLesson={openLesson}
+                onOpenLessonChange={handleOpenLessonChange}
+              />
             </section>
 
             {/* Quiz */}
@@ -109,7 +123,10 @@ export default function ModulePage({ mod }: { mod: Module }) {
             {rightTab === "chat" ? (
               <ChatPanel moduleTitle={mod.title} />
             ) : (
-              <VideoPanel moduleTitle={mod.title} />
+              <VideoPanel
+                moduleTitle={mod.title}
+                lessonTitle={activeLesson?.title ?? null}
+              />
             )}
           </div>
         </aside>

@@ -1,25 +1,27 @@
 "use client";
 
-import { useState } from "react";
 import { Lesson } from "@/lib/curriculum";
 import { useProgressStore, selectModuleProgress } from "@/lib/store";
 
 export default function LessonGrid({
   lessons,
   moduleId,
+  openLesson,
+  onOpenLessonChange,
 }: {
   lessons: Lesson[];
   moduleId: number;
+  openLesson: number | null;
+  onOpenLessonChange: (index: number | null) => void;
 }) {
   const completeLesson = useProgressStore((s) => s.completeLesson);
   const progress = useProgressStore((s) => selectModuleProgress(s, moduleId));
-  const [openLesson, setOpenLesson] = useState<number | null>(null);
 
   const handleClick = (index: number) => {
     if (openLesson === index) {
-      setOpenLesson(null);
+      onOpenLessonChange(null);
     } else {
-      setOpenLesson(index);
+      onOpenLessonChange(index);
       completeLesson(moduleId, index);
     }
   };
@@ -84,7 +86,7 @@ export default function LessonGrid({
               </h3>
             </div>
             <button
-              onClick={() => setOpenLesson(null)}
+              onClick={() => onOpenLessonChange(null)}
               className="text-mid hover:text-dark text-lg px-2"
               aria-label="Close lesson"
             >
